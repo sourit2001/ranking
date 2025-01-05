@@ -1,101 +1,182 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>动态排名视频生成器</title>
+    <title>动态排名生成器</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        .progress {
-            width: 100%;
-            height: 20px;
-            background-color: #f0f0f0;
-            border-radius: 10px;
-            margin: 20px 0;
-        }
-        .progress-bar {
-            width: 0%;
-            height: 100%;
-            background-color: #4CAF50;
-            border-radius: 10px;
-            transition: width 0.3s ease-in-out;
-        }
-        .container {
-            max-width: 800px;
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
         .error {
             color: red;
             margin: 10px 0;
         }
+        .chart-container {
+            position: relative;
+            height: 80vh;
+            margin-top: 20px;
+        }
+        #controls {
+            margin: 20px 0;
+            text-align: center;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 0 5px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background-color: #4CAF50;
+            color: white;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #timeDisplay {
+            font-size: 24px;
+            text-align: center;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        .upload-form {
+            text-align: center;
+            margin: 20px 0;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>动态排名视频生成器</h1>
-        <form id="uploadForm">
-            <input type="file" name="file" accept=".xlsx,.xls,.csv" required>
-            <button type="submit">生成视频</button>
-        </form>
-        <div class="progress">
-            <div class="progress-bar" id="progressBar"></div>
+        <h1 style="text-align: center;">动态排名生成器</h1>
+        
+        <div class="upload-form">
+            <form action="/upload" method="post" enctype="multipart/form-data">
+                <input type="file" name="file" accept=".xlsx,.xls,.csv">
+                <button type="submit">上传文件</button>
+            </form>
         </div>
-        <p id="status">准备就绪</p>
-        <p id="error" class="error"></p>
-        <div id="downloadDiv" style="display: none;">
-            <a href="/download" class="download-btn">下载视频</a>
-        </div>
-    </div>
 
-    <script>
-        document.getElementById('uploadForm').onsubmit = async function(e) {
-            e.preventDefault();
-            const formData = new FormData(this);
-            const progressBar = document.getElementById('progressBar');
-            const status = document.getElementById('status');
-            const error = document.getElementById('error');
-            const downloadDiv = document.getElementById('downloadDiv');
-            
-            downloadDiv.style.display = 'none';
-            error.textContent = '';
-            
-            try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 1800000); // 30分钟超时
-                
-                const response = await fetch('/upload', {
-                    method: 'POST',
-                    body: formData,
-                    signal: controller.signal
-                });
-                
-                clearTimeout(timeoutId);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+        {% if error %}
+        <div class="error">{{ error }}</div>
+        {% endif %}
+
+        {% if chart_data %}
+        <div id="timeDisplay"></div>
+        <div id="controls">
+            <button onclick="startAnimation()">开始动画</button>
+            <button onclick="pauseAnimation()">暂停</button>
+            <button onclick="resetAnimation()">重置</button>
+        </div>
+        <div class="chart-container">
+            <canvas id="rankingChart"></canvas>
+        </div>
+        <script>
+            const chartData = {{ chart_data|safe }};
+            let currentFrame = 0;
+            let animationId = null;
+            let chart = null;
+            const animationSpeed = 1000; // 动画间隔时间（毫秒）
+
+            function createChart(frameIndex) {
+                const ctx = document.getElementById('rankingChart').getContext('2d');
+                const timeDisplay = document.getElementById('timeDisplay');
+                timeDisplay.textContent = chartData.dates[frameIndex];
+
+                const data = chartData.data
+                    .map(item => ({
+                        label: item.model,
+                        data: [item.values[frameIndex]],
+                        backgroundColor: `hsl(${Math.random() * 360}, 70%, 50%)`
+                    }))
+                    .sort((a, b) => b.data[0] - a.data[0])
+                    .slice(0, 10);
+
+                if (chart) {
+                    chart.destroy();
                 }
-                
-                const reader = response.body.getReader();
-                
-                while (true) {
-                    const {value, done} = await reader.read();
-                    if (done) break;
-                    
-                    const text = new TextDecoder().decode(value);
-                    const lines = text.split('\n').filter(line => line.trim());
-                    
-                    for (const line of lines) {
-                        const data = JSON.parse(line);
-                        progressBar.style.width = data.progress + '%';
-                        status.textContent = data.message;
-                        
-                        if (data.done) {
-                            downloadDiv.style.display = 'block';
-                        }
+
+                chart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: [''],
+                        datasets: data
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        animation: {
+                            duration: 500
+                        },
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                grid: {
+                                    display: false
+                                }
+                            },
+                            y: {
+                                grid: {
+                                    display: false
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                position: 'right',
+                                labels: {
+                                    font: {
+                                        size: 14
+                                    }
+                                }
+                            }
+                        },
+                        maintainAspectRatio: false
                     }
-                }
-            } catch (error) {
-                status.textContent = '错误：' + error.message;
+                });
             }
-        };
-    </script>
+
+            function startAnimation() {
+                if (animationId) return;
+                
+                function animate() {
+                    createChart(currentFrame);
+                    currentFrame = (currentFrame + 1) % chartData.dates.length;
+                    animationId = setTimeout(() => {
+                        requestAnimationFrame(animate);
+                    }, animationSpeed);
+                }
+                
+                animate();
+            }
+
+            function pauseAnimation() {
+                if (animationId) {
+                    clearTimeout(animationId);
+                    animationId = null;
+                }
+            }
+
+            function resetAnimation() {
+                pauseAnimation();
+                currentFrame = 0;
+                createChart(currentFrame);
+            }
+
+            // 初始化图表
+            createChart(0);
+            // 自动开始动画
+            startAnimation();
+        </script>
+        {% endif %}
+    </div>
 </body>
 </html>

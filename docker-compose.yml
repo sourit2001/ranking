@@ -3,15 +3,17 @@ services:
   web:
     build: .
     ports:
-      - "8080:5000"
+      - "8080:10000"
     volumes:
       - ./uploads:/app/uploads
     restart: always
-    deploy:
-      resources:
-        limits:
-          cpus: '2.0'
-          memory: 4G
-        reservations:
-          cpus: '1.0'
-          memory: 2G 
+    networks:
+      - app-network
+    environment:
+      - PYTHONUNBUFFERED=1
+      - FLASK_ENV=production
+      - TIMEOUT=300
+
+networks:
+  app-network:
+    driver: bridge 
