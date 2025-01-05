@@ -2,23 +2,23 @@ FROM python:3.9-slim
 
 WORKDIR /app
 
-# 设置pip缓存
-ENV PIP_NO_CACHE_DIR=false
-ENV PIP_ROOT_USER_ACTION=ignore
-
-# 安装系统依赖
+# 安装系统依赖和中文字体
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends ffmpeg && \
+    apt-get install -y --no-install-recommends \
+    ffmpeg \
+    fonts-noto-cjk \
+    fonts-noto-cjk-extra \
+    fonts-wqy-zenhei \
+    fonts-wqy-microhei && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# 分层安装Python包以利用缓存
+# 安装Python包
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 创建并设置上传目录
-RUN mkdir -p uploads && \
-    chmod 777 uploads
+# 创建上传目录
+RUN mkdir -p uploads && chmod 777 uploads
 
 # 复制应用代码
 COPY . .
