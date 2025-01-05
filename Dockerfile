@@ -4,13 +4,13 @@ WORKDIR /app
 
 # 安装系统依赖
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends ffmpeg && \
+    apt-get install -y ffmpeg && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
 # 安装Python包
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install -r requirements.txt
 
 # 创建上传目录
 RUN mkdir -p uploads
@@ -22,7 +22,7 @@ COPY . .
 ENV PORT=10000
 
 # 暴露端口
-EXPOSE ${PORT}
+EXPOSE 10000
 
 # 运行应用
-CMD gunicorn --bind 0.0.0.0:$PORT ranking_app:app
+CMD ["python", "ranking_app.py"]
