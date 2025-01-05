@@ -4,3 +4,4 @@ ffmpeg-python
 bar_chart_race
 flask
 gunicorn
+openpyxl
