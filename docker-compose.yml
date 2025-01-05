@@ -3,16 +3,16 @@ services:
   web:
     build: .
     ports:
-      - "8080:10000"
+      - "${PORT:-10000}:${PORT:-10000}"
     volumes:
       - ./uploads:/app/uploads
     restart: always
     networks:
       - app-network
     environment:
+      - PORT=${PORT:-10000}
       - PYTHONUNBUFFERED=1
       - FLASK_ENV=production
-      - TIMEOUT=300
 
 networks:
   app-network:
