@@ -3,6 +3,4 @@ pandas==1.5.3
 ffmpeg-python
 bar_chart_race
 flask
-flask-cors
-openpyxl
-matplotlib
+gunicorn
