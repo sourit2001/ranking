@@ -14,6 +14,8 @@ CORS(app)
 
 # 配置上传文件夹
 app.config['UPLOAD_FOLDER'] = 'uploads'
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 300  # 设置文件缓存时间
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 限制上传文件大小为16MB
 
 # 设置中文字体
 plt.rcParams['font.family'] = ['Noto Sans CJK JP', 'Noto Sans CJK SC', 'Noto Sans CJK TC', 'WenQuanYi Micro Hei', 'WenQuanYi Zen Hei']
@@ -80,11 +82,12 @@ def upload():
                     orientation='h',
                     sort='desc',
                     n_bars=20,
-                    figsize=(16, 12),
-                    dpi=144,
+                    figsize=(16, 9),
+                    dpi=72,  # 降低DPI
                     title='车型销量动态排名',
                     bar_size=0.8,
-                    period_length=800,
+                    period_length=200,  # 减少period_length
+                    steps_per_period=5,  # 减少steps
                     bar_label_size=14,
                     tick_label_size=16,
                     period_label={
