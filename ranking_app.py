@@ -134,5 +134,6 @@ def download():
         return json.dumps({"error": str(e)}), 500, {'Content-Type': 'application/json'}
 
 if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 10000))  # Render会提供PORT环境变量
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=port)
